@@ -1,6 +1,7 @@
 require 'nokogiri'
 require 'httparty'
 require 'pp'
+require 'csv'
 
 class HtmlParserIncluded < HTTParty::Parser
   def html
@@ -32,4 +33,8 @@ parsed_sessions = raw_sessions.map do |session|
   end
 end
 
-pp parsed_sessions 
+CSV.open('rails_conf_sessions.csv', 'wb', encoding: 'utf-8') do |csv|
+  parsed_sessions.each do |session|
+    csv << [session[:unique_id], session[:name], session[:description]]
+  end
+end
