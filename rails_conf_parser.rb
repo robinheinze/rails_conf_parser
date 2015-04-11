@@ -14,9 +14,9 @@ class Page
   parser HtmlParserIncluded
 end
 
-html_doc = Page.get('http://railsconf.com/program')
+session_html = Page.get('http://railsconf.com/program')
 
-raw_sessions = html_doc.css('div.session')
+raw_sessions = session_html.css('div.session')
 parsed_sessions = raw_sessions.map do |session|
   {}.tap do |hash|
     hash[:unique_id] = session.css('a').first['name']
@@ -33,8 +33,17 @@ parsed_sessions = raw_sessions.map do |session|
   end
 end
 
-CSV.open('rails_conf_sessions.csv', 'wb', encoding: 'utf-8') do |csv|
-  parsed_sessions.each do |session|
-    csv << [session[:unique_id], session[:name], session[:description]]
-  end
-end
+schedule_html = Page.get('http://railsconf.com/schedule')
+
+days = ['2015-04-21', '2015-04-22', '2015-04-23']
+day_one_timeslots = schedule_html.css('div#day-1 td.schedule-time-slot p').map { |p| p.text.strip }
+day_two_timeslots = schedule_html.css('div#day-2 td.schedule-time-slot p').map { |p| p.text.strip }
+day_three_timeslots = schedule_html.css('div#day-3 td.schedule-time-slot p').map { |p| p.text.strip }
+
+pp day_three_timeslots
+
+##CSV.open('rails_conf_sessions.csv', 'wb', encoding: 'utf-8') do |csv|
+##  parsed_sessions.each do |session|
+##    csv << [session[:unique_id], session[:name], session[:description]]
+##  end
+##end
