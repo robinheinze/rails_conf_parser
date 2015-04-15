@@ -21,11 +21,12 @@ class Schedule
   def initialize(args = {})
     @session_html = args[:session_html]
     @schedule_html = args[:schedule_html]
+    @days = ["2015-04-21", "2015-04-22", "2015-04-23"]
   end
 
   def parse
     raw_sessions = session_html.css('div.session')
-    parsed_sessions = raw_sessions.map do |session|
+    @parsed_sessions = raw_sessions.map do |session|
       speaker_bio_pgraphs = session.css('section.bio p')
       description_pgraphs = session.css('p') - speaker_bio_pgraphs
 
@@ -42,56 +43,33 @@ class Schedule
       )
     end
 
-   
-    days = ['2015-04-21', '2015-04-22', '2015-04-23']
-    day_one_timeslots = schedule_html.css('div#day-1 td.schedule-time-slot')
+    day_one_timeslots = schedule_html.css('div#day-1 td.schedule-time-slot') 
     day_two_timeslots = schedule_html.css('div#day-2 td.schedule-time-slot')
     day_three_timeslots = schedule_html.css('div#day-3 td.schedule-time-slot')
-
-    day_one_timeslots.each do |timeslot|
-      times = timeslot.text.strip.split(' - ')
-      start_time = times.first
-      end_time = times.last
-
-      activities = timeslot.css('~ td p').map { |a| a.text.strip }
-
-      activities.each do |activity|
-        session = parsed_sessions.detect { |session| session.name == activity }
-        session.start_datetime = days[0] + " " + start_time if session
-        session.end_datetime = days[0] + " " + end_time if session
-      end
-    end
-
-    day_two_timeslots.each do |timeslot|
-      times = timeslot.text.strip.split(' - ')
-      start_time = times.first
-      end_time = times.last
-
-      activities = timeslot.css('~ td p').map { |a| a.text.strip }
-
-      activities.each do |activity|
-        session = parsed_sessions.detect { |session| session.name == activity }
-        session.start_datetime = days[1] + " " + start_time if session
-        session.end_datetime = days[1] + " " + end_time if session
-      end
-    end
-
-    day_three_timeslots.each do |timeslot|
-      times = timeslot.text.strip.split(' - ')
-      start_time = times.first
-      end_time = times.last
-
-      activities = timeslot.css('~ td p').map { |a| a.text.strip }
-
-      activities.each do |activity|
-        session = parsed_sessions.detect { |session| session.name == activity }
-        session.start_datetime = days[2] + " " + start_time if session
-        session.end_datetime = days[2] + " " + end_time if session
-      end
-    end
-
-    pp parsed_sessions   
+    
+    parse_timeslots(0, day_one_timeslots)
+    parse_timeslots(1, day_two_timeslots)
+    parse_timeslots(2, day_three_timeslots)
+        
+    pp @parsed_sessions   
   end
+  
+  def parse_timeslots(day, timeslots)
+    timeslots.each do |timeslot|
+      times = timeslot.text.strip.split(' - ')
+      start_time = times.first
+      end_time = times.last
+
+      activities = timeslot.css('~ td p').map { |a| a.text.strip }
+
+      activities.each do |activity|
+        session = @parsed_sessions.detect { |session| session.name == activity }
+        session.start_datetime = @days[day] + " " + start_time if session
+        session.end_datetime = @days[day] + " " + end_time if session
+      end
+    end
+  end
+
 end
 
 class Session
