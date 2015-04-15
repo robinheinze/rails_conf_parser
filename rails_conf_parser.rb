@@ -57,11 +57,40 @@ class Schedule
 
       activities.each do |activity|
         session = parsed_sessions.detect { |session| session.name == activity }
+        session.start_datetime = days[0] + " " + start_time if session
+        session.end_datetime = days[0] + " " + end_time if session
+      end
+    end
+
+    day_two_timeslots.each do |timeslot|
+      times = timeslot.text.strip.split(' - ')
+      start_time = times.first
+      end_time = times.last
+
+      activities = timeslot.css('~ td p').map { |a| a.text.strip }
+
+      activities.each do |activity|
+        session = parsed_sessions.detect { |session| session.name == activity }
         session.start_datetime = days[1] + " " + start_time if session
         session.end_datetime = days[1] + " " + end_time if session
       end
     end
-    pp parsed_sessions.first   
+
+    day_three_timeslots.each do |timeslot|
+      times = timeslot.text.strip.split(' - ')
+      start_time = times.first
+      end_time = times.last
+
+      activities = timeslot.css('~ td p').map { |a| a.text.strip }
+
+      activities.each do |activity|
+        session = parsed_sessions.detect { |session| session.name == activity }
+        session.start_datetime = days[2] + " " + start_time if session
+        session.end_datetime = days[2] + " " + end_time if session
+      end
+    end
+
+    pp parsed_sessions   
   end
 end
 
