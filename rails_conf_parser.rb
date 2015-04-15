@@ -2,6 +2,7 @@ require 'nokogiri'
 require 'httparty'
 require 'pp'
 require 'csv'
+require 'pry-byebug'
 
 class HtmlParserIncluded < HTTParty::Parser
   def html
@@ -16,7 +17,7 @@ end
 
 
 class Schedule
-  attr_accessor :session_html, :schedule_html
+  attr_accessor :session_html, :schedule_html, :parsed_sessions, :days
 
   def initialize(args = {})
     @session_html = args[:session_html]
@@ -26,7 +27,7 @@ class Schedule
 
   def parse
     raw_sessions = session_html.css('div.session')
-    @parsed_sessions = raw_sessions.map do |session|
+    self.parsed_sessions = raw_sessions.map do |session|
       speaker_bio_pgraphs = session.css('section.bio p')
       description_pgraphs = session.css('p') - speaker_bio_pgraphs
 
@@ -42,7 +43,7 @@ class Schedule
         speaker: speaker
       )
     end
-
+    
     day_one_timeslots = schedule_html.css('div#day-1 td.schedule-time-slot') 
     day_two_timeslots = schedule_html.css('div#day-2 td.schedule-time-slot')
     day_three_timeslots = schedule_html.css('div#day-3 td.schedule-time-slot')
@@ -51,7 +52,6 @@ class Schedule
     parse_timeslots(1, day_two_timeslots)
     parse_timeslots(2, day_three_timeslots)
         
-    pp @parsed_sessions   
   end
   
   def parse_timeslots(day, timeslots)
@@ -63,9 +63,9 @@ class Schedule
       activities = timeslot.css('~ td p').map { |a| a.text.strip }
 
       activities.each do |activity|
-        session = @parsed_sessions.detect { |session| session.name == activity }
-        session.start_datetime = @days[day] + " " + start_time if session
-        session.end_datetime = @days[day] + " " + end_time if session
+        session = parsed_sessions.detect { |session| session.name == activity }
+        session.start_datetime = days[day] + " " + start_time if session
+        session.end_datetime = days[day] + " " + end_time if session
       end
     end
   end
@@ -83,7 +83,7 @@ class Session
     @end_datetime = args[:end_datetime]
     @speaker = args[:speaker]
   end
-
+  
 end
 
 class Speaker
@@ -96,11 +96,22 @@ class Speaker
 
 end
 
-sched = Schedule.new(:session_html => Page.get('http://railsconf.com/program'), :schedule_html => Page.get('http://railsconf.com/schedule'))
+sched = Schedule.new(
+  :session_html => Page.get('http://railsconf.com/program'), 
+  :schedule_html => Page.get('http://railsconf.com/schedule')
+)
 sched.parse
 
-##CSV.open('rails_conf_sessions.csv', 'wb', encoding: 'utf-8') do |csv|
-##  parsed_sessions.each do |session|
-##    csv << [session[:unique_id], session[:name], session[:description]]
-##  end
-##end
+CSV.open('rails_conf_sessions.csv', 'wb') do |csv|
+  sched.parsed_sessions.each do |session|
+    csv << [
+      session.unique_id, 
+      session.name, 
+      session.description, 
+      session.start_datetime, 
+      session.end_datetime, 
+      session.speaker.display_name,
+      session.speaker.bio
+    ]
+  end
+end
