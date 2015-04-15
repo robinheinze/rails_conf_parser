@@ -2,7 +2,6 @@ require 'nokogiri'
 require 'httparty'
 require 'pp'
 require 'csv'
-require 'pry-byebug'
 
 class HtmlParserIncluded < HTTParty::Parser
   def html
@@ -107,11 +106,11 @@ CSV.open('rails_conf_sessions.csv', 'wb') do |csv|
     csv << [
       session.unique_id, 
       session.name, 
-      session.description, 
+      session.description.gsub("\n", " "), 
       session.start_datetime, 
       session.end_datetime, 
       session.speaker.display_name,
-      session.speaker.bio
+      session.speaker.bio.gsub("\n", " ") 
     ]
   end
 end
