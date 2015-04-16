@@ -2,6 +2,7 @@ require 'nokogiri'
 require 'httparty'
 require 'pp'
 require 'csv'
+require 'pry-byebug'
 
 class HtmlParserIncluded < HTTParty::Parser
   def html
@@ -61,13 +62,17 @@ class Schedule
       start_time = times.first
       end_time = times.last
 
-      activities = timeslot.css('~ td p.session-title').map { |a| a.text.strip }
+      activities = timeslot.css('~ td')
 
       activities.each_with_index do |activity, index|
-        session = parsed_sessions.detect { |session| session.name == activity }
-        session.start_datetime = days[day] + " " + start_time if session
-        session.end_datetime = days[day] + " " + end_time if session
-        session.location_name = locations[index] if session
+        activity_text = activity.css('p.session-title').text.strip
+        session = parsed_sessions.detect { |session| session.name == activity_text }
+        if session
+          session.start_datetime = days[day] + " " + start_time
+          session.end_datetime = days[day] + " " + end_time
+          session.location_name = locations[index]
+          session.track = activity.css('p.track_name_base').text.strip
+        end
       end
     end
   end
@@ -75,7 +80,7 @@ class Schedule
 end
 
 class Session
-  attr_accessor :unique_id, :name, :description, :speaker, :start_datetime, :end_datetime, :location_name
+  attr_accessor :unique_id, :name, :description, :speaker, :start_datetime, :end_datetime, :location_name, :track
 
   def initialize(args = {})
     @unique_id = args[:unique_id]
@@ -85,6 +90,7 @@ class Session
     @end_datetime = args[:end_datetime]
     @speaker = args[:speaker]
     @location_name = args[:location_name]
+    @track = args[:track]
   end
   
 end
@@ -113,7 +119,7 @@ CSV.open('rails_conf_sessions.csv', 'wb') do |csv|
       session.name, 
       session.description.gsub("\n", " "), 
       "",
-      "",
+      session.track,
       "",
       session.start_datetime, 
       session.end_datetime,
