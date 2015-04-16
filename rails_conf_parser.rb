@@ -102,14 +102,24 @@ sched = Schedule.new(
 sched.parse
 
 CSV.open('rails_conf_sessions.csv', 'wb') do |csv|
+    csv << ["Unique ID", "Name",  "Description", "Activity Code", "Track", "Tags (comma-separated)", "Start Time",  "End Time",  "Location Name", "Parent Activity Unique ID", "Speaker 1 Display Name",  "Speaker 1 First Name",  "Speaker 1 Last Name", "Speaker 1 Role",  "Speaker 1 Title", "Speaker 1 Bio", "Speaker 1 Email One", "Speaker 1 Email Two", "Speaker 1 Organization Name"]
   sched.parsed_sessions.each do |session|
     csv << [
       session.unique_id, 
       session.name, 
       session.description.gsub("\n", " "), 
+      "",
+      "",
+      "",
       session.start_datetime, 
-      session.end_datetime, 
+      session.end_datetime,
+      "",
+      "",
       session.speaker.display_name,
+      "",
+      "",
+      "",
+      "",
       session.speaker.bio.gsub("\n", " ") 
     ]
   end
