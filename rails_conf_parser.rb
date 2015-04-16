@@ -50,21 +50,24 @@ class Schedule
     parse_timeslots(0, day_one_timeslots)
     parse_timeslots(1, day_two_timeslots)
     parse_timeslots(2, day_three_timeslots)
-        
   end
   
   def parse_timeslots(day, timeslots)
+
+    locations = schedule_html.css('div#day-1 th').map { |l| l.text.strip }.select { |l| l != '(Time Slots)' }
+
     timeslots.each do |timeslot|
       times = timeslot.text.strip.split(' - ')
       start_time = times.first
       end_time = times.last
 
-      activities = timeslot.css('~ td p').map { |a| a.text.strip }
+      activities = timeslot.css('~ td p.session-title').map { |a| a.text.strip }
 
-      activities.each do |activity|
+      activities.each_with_index do |activity, index|
         session = parsed_sessions.detect { |session| session.name == activity }
         session.start_datetime = days[day] + " " + start_time if session
         session.end_datetime = days[day] + " " + end_time if session
+        session.location_name = locations[index] if session
       end
     end
   end
@@ -72,7 +75,7 @@ class Schedule
 end
 
 class Session
-  attr_accessor :unique_id, :name, :description, :speaker, :start_datetime, :end_datetime
+  attr_accessor :unique_id, :name, :description, :speaker, :start_datetime, :end_datetime, :location_name
 
   def initialize(args = {})
     @unique_id = args[:unique_id]
@@ -81,6 +84,7 @@ class Session
     @start_datetime = args[:start_datetime]
     @end_datetime = args[:end_datetime]
     @speaker = args[:speaker]
+    @location_name = args[:location_name]
   end
   
 end
@@ -113,7 +117,7 @@ CSV.open('rails_conf_sessions.csv', 'wb') do |csv|
       "",
       session.start_datetime, 
       session.end_datetime,
-      "",
+      session.location_name,
       "",
       session.speaker.display_name,
       "",
