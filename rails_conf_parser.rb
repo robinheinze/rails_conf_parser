@@ -17,10 +17,11 @@ end
 
 
 class Schedule
-  attr_accessor :session_html, :schedule_html, :parsed_sessions, :days
+  attr_accessor :session_html, :schedule_html, :parsed_sessions, :days, :labs_html
 
   def initialize(args = {})
     @session_html = args[:session_html]
+    @labs_html = args[:labs_html]
     @schedule_html = args[:schedule_html]
     @days = ["2015-04-21", "2015-04-22", "2015-04-23"]
   end
@@ -32,7 +33,7 @@ class Schedule
       description_pgraphs = session.css('p') - speaker_bio_pgraphs
 
       speaker = Speaker.new(
-        display_name: session.css('h3.session-presenter').text.gsub('presented by: ', ''),
+        display_name: session.css('h3.session-presenter').text.gsub('presented by: ', '').strip,
         bio: speaker_bio_pgraphs.map(&:to_s).join(' ')
       )
 
@@ -40,6 +41,24 @@ class Schedule
         unique_id: session.css('a').first['name'],
         name: session.css('h2.session-talk-title a').text.strip,
         description: description_pgraphs.map(&:to_s).join(' '),
+        speaker: speaker
+      )
+    end
+
+    raw_labs = labs_html.css('div.program-description-wrap')
+    raw_labs.each do |lab|
+      speaker_bio_pgraphs = lab.css('h3.program-speaker-subhead + p')
+      description_pgraphs = lab.css('h3.session-presenter + p')
+      
+      speaker = Speaker.new(
+        display_name: lab.css('h3.session-presenter').text.gsub('presented by: ', '').strip,
+        bio: speaker_bio_pgraphs.map { |p| p.text.strip }.join(' ')
+      )
+
+      self.parsed_sessions << Session.new(
+        unique_id: lab.css('h2.session-talk-title').first['id'],
+        name: lab.css('h2.session-talk-title a').text.strip,
+        description: description_pgraphs.map{ |p| p.text.strip }.join(' '),
         speaker: speaker
       )
     end
@@ -107,7 +126,8 @@ end
 
 sched = Schedule.new(
   :session_html => Page.get('http://railsconf.com/program'), 
-  :schedule_html => Page.get('http://railsconf.com/schedule')
+  :schedule_html => Page.get('http://railsconf.com/schedule'),
+  :labs_html => Page.get('http://railsconf.com/program/labs'),
 )
 sched.parse
 
